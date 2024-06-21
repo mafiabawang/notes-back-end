@@ -49,6 +49,11 @@ class UsersService {
 
         return rows[0];
     }
+
+    async getUsersByUsername(username) {
+        const rows = await this._dbUtils.select(['id', 'username', 'fullname'], tableNames, `username LIKE $1`, [`%${username}%`]);
+        return rows;
+    }
 }
 
 module.exports = UsersService;

@@ -10,14 +10,22 @@ class DBUtils {
         return rows;
     }
 
-    async select(columns, table, condition = '', values = [], joinTables = [], joinConditions = []) {
+    async select(columns, table, condition = '', values = [], joinTables = [], joinConditions = [], groupBy = '') {
         let queryText = `SELECT `;
         queryText = (columns.length === 0) ? queryText + '*' : queryText + columns.join(', ');
         queryText += ` FROM ${table}`;
 
-        if (joinTables.length > 0) joinTables.forEach((tab, index) => queryText += ` JOIN ${tab} ON ${table}.${joinConditions[index]} = ${tab}.id`);
+        if (joinTables.length > 0) {
+            joinTables.forEach((tab, index) => {
+                if (index < joinConditions.length) {
+                    queryText += ` LEFT JOIN ${tab} ON ${joinConditions[index]}`;
+                }
+            });
+        }
 
         if (condition) queryText += ` WHERE ${condition}`;
+
+        if (groupBy) queryText += ` GROUP BY ${groupBy}`;
 
         const query = {
             text: queryText,
