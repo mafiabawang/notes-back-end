@@ -3301,6 +3301,383 @@
 					}
 				}
 			]
+		},
+		{
+			"name": "Exports",
+			"item": [
+				{
+					"name": "Exports Notes with Valid Payload",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('response code should have 201 value', () => {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									" ",
+									"pm.test('response Content-Type header should have application/json value', () => {",
+									"  pm.expect(pm.response.headers.get('Content-Type')).to.equals('application/json; charset=utf-8');",
+									"});",
+									" ",
+									"pm.test('response body should be an object', () => {",
+									"   const responseJson = pm.response.json();",
+									"   pm.expect(responseJson).to.be.an('object');",
+									"});",
+									" ",
+									"pm.test('response body should have the correct property and value', () => {",
+									"   const responseJson = pm.response.json();",
+									" ",
+									"   pm.expect(responseJson).to.have.ownProperty('status');",
+									"   pm.expect(responseJson.status).to.equals('success');",
+									"   pm.expect(responseJson).to.have.ownProperty('message');",
+									"   pm.expect(responseJson.message).to.equals('Permintaan Anda dalam antrean');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessTokenUserA}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"targetEmail\": \"agis.septiyanto@gmail.com\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "localhost:5000/export/notes",
+							"host": [
+								"localhost"
+							],
+							"port": "5000",
+							"path": [
+								"export",
+								"notes"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Exports Notes with Bad Payload",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let badExportPayloads = pm.environment.get('badExportPayloads');",
+									" ",
+									"if (!badExportPayloads || badExportPayloads.length === 0) {",
+									"    badExportPayloads = [",
+									"       {},",
+									"       { targetEmail: true },",
+									"       { targetEmail: 0 },",
+									"       { targetEmail: '' },",
+									"       { targetEmail: 'John' },",
+									"       { targetEmail: 'qwert123' },",
+									"    ];",
+									"}",
+									" ",
+									"const currentBadExportPayload = badExportPayloads.shift();",
+									"pm.environment.set('currentBadExportPayload', JSON.stringify(currentBadExportPayload));",
+									"pm.environment.set('badExportPayloads', badExportPayloads);"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('response code should have 400 value', () => {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									" ",
+									"pm.test('response Content-Type header should have application/json value', () => {",
+									"  pm.expect(pm.response.headers.get('Content-Type')).to.equals('application/json; charset=utf-8');",
+									"});",
+									" ",
+									"pm.test('response body should be an object', () => {",
+									"   const responseJson = pm.response.json();",
+									"   pm.expect(responseJson).to.be.an('object');",
+									"});",
+									" ",
+									"pm.test('response body should have the correct property and value', () => {",
+									"   const responseJson = pm.response.json();",
+									" ",
+									"   pm.expect(responseJson).to.have.ownProperty('status');",
+									"   pm.expect(responseJson.status).to.equals('fail');",
+									"   pm.expect(responseJson).to.have.ownProperty('message');",
+									"   pm.expect(responseJson.message).to.be.a('string');",
+									"});",
+									" ",
+									"const repeatRequestUntilDatasetEmpty = () => {",
+									"    const badExportPayloads = pm.environment.get('badExportPayloads');",
+									" ",
+									"    if(badExportPayloads && badExportPayloads.length > 0) {",
+									"        postman.setNextRequest('Exports Notes with Bad Payload');",
+									"    }",
+									"}",
+									" ",
+									"repeatRequestUntilDatasetEmpty();"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessTokenUserA}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{{currentBadExportPayload}}\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "localhost:5000/export/notes",
+							"host": [
+								"localhost"
+							],
+							"port": "5000",
+							"path": [
+								"export",
+								"notes"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"// membuat User A ",
+							"const createUserARequest = {",
+							"    url: 'http://localhost:5000/users',",
+							"    method: 'POST',",
+							"    header: {",
+							"        'Content-Type': 'application/json',",
+							"    },",
+							"    body: {",
+							"        mode: 'raw',",
+							"        raw: JSON.stringify({",
+							"            username: 'user_a',",
+							"            password: 'secret',",
+							"            fullname: 'User A',",
+							"        }),",
+							"    },",
+							"};",
+							" ",
+							"pm.sendRequest(createUserARequest, (error, response) => {",
+							"    console.log(error ? error : response);",
+							" ",
+							"    // Setelah terdaftar, login dengan User A",
+							"    const loginUserRequest = {",
+							"        url: 'http://localhost:5000/authentications',",
+							"        method: 'POST',",
+							"        header: {",
+							"            'Content-Type': 'application/json',",
+							"        },",
+							"        body: {",
+							"            mode: 'raw',",
+							"            raw: JSON.stringify({",
+							"                username: 'user_a',",
+							"                password: 'secret',",
+							"            }),",
+							"        },",
+							"    };",
+							" ",
+							"    pm.sendRequest(loginUserRequest, (error, response) => {",
+							"        if (!error) {",
+							"            // memasukkan access token User A ke environment variabel",
+							"            const { data: { accessToken } } = response.json();",
+							"            pm.environment.set('accessTokenUserA', accessToken);",
+							"        }",
+							"    });",
+							"});"
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "Uploads [Manual]",
+			"item": [
+				{
+					"name": "Upload Image",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('response status should be 201', () => {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									" ",
+									"pm.test('response Content-Type header should have application/json value', () => {",
+									"    pm.expect(pm.response.headers.get('Content-Type')).to.equals('application/json; charset=utf-8');",
+									"});",
+									" ",
+									"pm.test('response should contains fileLocation in body data response', () => {",
+									"    const responseJson = pm.response.json();",
+									" ",
+									"    pm.expect(responseJson).to.have.ownProperty('status');",
+									"    pm.expect(responseJson).to.have.ownProperty('data');",
+									" ",
+									"    pm.expect(responseJson.status).to.equals('success');",
+									"    pm.expect(responseJson.data).to.be.an('object');",
+									" ",
+									"    const { data } = responseJson;",
+									" ",
+									"    pm.expect(data).to.have.ownProperty('fileLocation');",
+									"    pm.expect(data.fileLocation).to.be.a('string');",
+									"    pm.expect(data.fileLocation).to.not.equals('');",
+									" ",
+									"    // memasukkan fileLocation ke environment variable",
+									"    pm.environment.set('fileLocation', data.fileLocation);",
+									"});",
+									" ",
+									"pm.test('when requesting the fileLocation', () => {",
+									"    const fileLocation = pm.environment.get('fileLocation');",
+									" ",
+									"    pm.sendRequest(fileLocation, (_, response) => {",
+									"        pm.test('response code should be 200', () => {",
+									"            pm.expect(response.code).to.equals(200);",
+									"        })",
+									"    });",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "data",
+									"type": "file",
+									"src": []
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:5000/upload/images",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5000",
+							"path": [
+								"upload",
+								"images"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Upload Image with Non-Image File",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('response code should have 400 value', () => {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									" ",
+									"pm.test('response Content-Type header should have application/json value', () => {",
+									"  pm.expect(pm.response.headers.get('Content-Type')).to.equals('application/json; charset=utf-8');",
+									"});",
+									" ",
+									"pm.test('response body should have the correct property and value', () => {",
+									"   const responseJson = pm.response.json();",
+									" ",
+									"   pm.expect(responseJson).to.have.ownProperty('status');",
+									"   pm.expect(responseJson.status).to.equals('fail');",
+									"   pm.expect(responseJson).to.have.ownProperty('message');",
+									"   pm.expect(responseJson.message).to.be.a('string');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "data",
+									"type": "file",
+									"src": []
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:5000/upload/images",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5000",
+							"path": [
+								"upload",
+								"images"
+							]
+						}
+					},
+					"response": []
+				}
+			]
 		}
 	]
 }

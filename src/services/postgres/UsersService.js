@@ -1,12 +1,7 @@
 const { nanoid } = require('nanoid');
-
 const DBUtils = require('../../utils/DBUtils');
 const { hashPassword, comparePassword } = require('../../utils/PasswordUtils');
-
-const InvariantError = require('../../exceptions/InvariantError');
-const NotFoundError = require('../../exceptions/NotFoundError');
-const AuthenticationError = require('../../exceptions/AuthenticationError');
-
+const { InvariantError, AuthenticationError, NotFoundError } = require('../../exceptions');
 const tableNames = 'users';
 
 class UsersService {

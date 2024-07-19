@@ -1,17 +1,13 @@
 const { nanoid } = require('nanoid');
-
 const DBUtils = require('../../utils/DBUtils');
-
-const InvariantError = require('../../exceptions/InvariantError');
-const NotFoundError = require('../../exceptions/NotFoundError');
-const AuthorizationError = require('../../exceptions/AuthorizationError');
-
+const { NotFoundError, InvariantError, AuthorizationError } = require('../../exceptions');
 const tableNames = 'notes';
 
 class NotesService {
-    constructor(collaborationService) {
+    constructor(collaborationService, cacheService) {
         this._dbUtils = new DBUtils();
         this._collaborationService = collaborationService;
+        this._cacheService = cacheService;
     }
 
     async verifyNoteOwner(id, owner) {
@@ -48,23 +44,32 @@ class NotesService {
 
         if (!rows[0].id) throw new InvariantError('Gagal Menambahkan Catatan');
 
+        await this._cacheService.delete(`notes:${owner}`);
         return rows[0].id;
     }
 
     async getNotes(owner) {
-        const columns = ['notes.id', 'title', 'body', 'tags', 'created_at', 'updated_at', 'owner'];
-        const joinTables = ['collaborations'];
-        const joinConditions = ['notes.id = collaborations.note_id'];
+        try {
+            const result = await this._cacheService.get(`notes:${owner}`);
+            return JSON.parse(result);
+        } catch (error) {
+            const columns = ['notes.id', 'title', 'body', 'tags', 'created_at', 'updated_at', 'owner'];
+            const joinTables = ['collaborations'];
+            const joinConditions = ['notes.id = collaborations.note_id'];
 
-        return await this._dbUtils.select(
-            columns,
-            tableNames,
-            'notes.owner = $1 OR collaborations.user_id = $1',
-            [owner],
-            joinTables,
-            joinConditions,
-            'notes.id'
-        );
+            const result = await this._dbUtils.select(
+                columns,
+                tableNames,
+                'notes.owner = $1 OR collaborations.user_id = $1',
+                [owner],
+                joinTables,
+                joinConditions,
+                'notes.id'
+            );
+
+            await this._cacheService.set(`notes:${owner}`, JSON.stringify(result));
+            return result;
+        }
     }
 
     async getNoteById(id) {
@@ -84,7 +89,6 @@ class NotesService {
         if (!rows.length) throw new NotFoundError('Catatan tidak ditemukan');
 
         return rows[0];
-        console.log(rows[0]);
     }
 
     async editNoteById(id, { title, body, tags }) {
@@ -95,11 +99,18 @@ class NotesService {
         const rows = await this._dbUtils.update(tableNames, columns, `id = $${values.length}`, values);
 
         if (!rows.length) throw new NotFoundError('Gagal memperbarui catatan. Id tidak ditemukan');
+
+        const { owner } = await this._dbUtils.select(['owner'], tableNames, `id = $1`, [rows[0].id]);
+        await this._cacheService.delete(`notes:${owner}`);
+
     }
 
     async deleteNoteById(id) {
         const rows = await this._dbUtils.delete(tableNames, `id = $1`, [id]);
         if (!rows.length) throw new NotFoundError('Gagal menghapus catatan. Id tidak ditemukan');
+
+        const { owner } = await this._dbUtils.select(['owner'], tableNames, `id = $1`, [rows[0].id]);
+        await this._cacheService.delete(`notes:${owner}`);
     }
 }
 

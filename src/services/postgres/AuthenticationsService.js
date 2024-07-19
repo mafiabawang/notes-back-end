@@ -1,9 +1,6 @@
 const { nanoid } = require('nanoid');
-
 const DBUtils = require('../../utils/DBUtils');
-
-const InvariantError = require('../../exceptions/InvariantError');
-
+const { InvariantError } = require('../../exceptions');
 const tableNames = 'authentications';
 
 class AuthenticationsService {
